@@ -1,0 +1,17 @@
+HOSTNAME_HTTPS="login.52.160.91.126.nip.io"
+HOSTNAME_HTTP="nlogin.52.160.91.126.nip.io"
+APPLICATION_NAME="sso"
+HTTPS_KEYSTORE="sso-https.jks"
+HTTPS_PASSWORD="my-password"
+HTTPS_SECRET="sso-app-secret"
+JGROUPS_ENCRYPT_KEYSTORE="jgroups.jceks"
+JGROUPS_ENCRYPT_PASSWORD="my-password"
+JGROUPS_ENCRYPT_SECRET="sso-app-secret"
+SERVICE_ACCOUNT_NAME=sso-service-account
+SSO_REALM=cloud
+SSO_SERVICE_USERNAME=sso-mgmtuser
+SSO_SERVICE_PASSWORD=mgmt-password
+SSO_ADMIN_USERNAME=admin
+SSO_ADMIN_PASSWORD=adm-password
+SSO_TRUSTSTORE=truststore.jks
+SSO_TRUSTSTORE_PASSWORD=my-password

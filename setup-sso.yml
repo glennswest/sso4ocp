@@ -1,0 +1,35 @@
+---
+- hosts: masters
+  vars:
+    description: "auth users"
+  tasks:
+  - name: Setup SSO Config
+    blockinfile:
+      backup: yes
+      dest: /etc/origin/master/master-config.yaml
+      insertafter: "HTPasswdPasswordIdentityProvider"
+      block: |1
+         - name: sso
+           challenge: false
+           login: true
+           mappingInfo: add
+           provider:
+             apiVersion: v1
+             kind: OpenIDIdentityProvider
+             clientID: openshift
+             clientSecret: fd3b3f2c-2967-4654-a186-3612f82e2b97
+             ca: xpaas.crt
+             urls:
+               authorize: https://login.52.160.91.126.nip.io/auth/realms/cloud/protocol/openid-connect/auth
+               token: https://login.52.160.91.126.nip.io/auth/realms/cloud/auth/realms/OpenShift/protocol/openid-connect/token
+               userInfo: https://login.52.160.91.126.nip.io/auth/realms/cloud/auth/realms/OpenShift/protocol/openid-connect/userinfo
+             claims:
+               id:
+               - sub
+               preferredUsername:
+               - preferred_username
+               name:
+               - name
+               email:
+               - email
+

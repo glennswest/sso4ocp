@@ -1,0 +1,73 @@
+---
+- hosts: localhost
+  vars:
+    description: "auth users"
+    create_data: 
+        clientId: "openshift4"
+        name:     "OpenShift4"
+        description: "OpenShift Console Authentication"
+        enabled: true
+        protocol: "openid-connect"
+        clientAuthenticatorType: "client-secret"
+        directAccessGrantsEnabled: true
+        redirectUris: ["https://gsw1v36.southeastasia.cloudapp.azure.com:8443"]
+        webOrigins: []
+        publicClient: false
+        consentRequired: false
+        frontchannelLogout: false
+        standardFlowEnabled: true
+    
+  tasks:
+  - name: Login to SSO
+    uri:
+      url: https://login.52.160.91.126.nip.io/auth/realms/cloud/protocol/openid-connect/token
+      method: POST
+      body: "grant_type=password&client_id=admin-cli&username=sso-mgmtuser&password=mgmt-password"
+      return_content: yes
+      status_code: 200
+      validate_certs: no
+    register: login
+  - debug: var=login.json.access_token
+  - name: Login to SSO
+    uri:
+      url: https://login.52.160.91.126.nip.io/auth/realms/cloud/clients-registrations/default
+      method: POST
+      headers: 
+           "Authorization": "bearer {{login.json.access_token}}"
+           "Content-Type": "application/json"
+      body: "{{ create_data | to_json }}"
+      return_content: yes
+      status_code: 201
+      validate_certs: no
+    register: create
+  - debug: var=create
+
+#RESULT=`curl --silent --insecure --data "grant_type=password&client_id=admin-cli&username=sso-mgmtuser&password=mgmt-password" https://login.52.160.91.126.nip.io/auth/realms/cloud/protocol/openid-connect/token`
+#TOKEN=`echo $RESULT | sed 's/.*access_token":"//g' | sed 's/".*//g'`
+#RESULTX=`curl https://login.52.160.91.126.nip.io/auth/admin/realms/cloud/admin-events -H "Authorization: bearer $TOKEN" --insecure --silent`
+#echo $RESULTX
+#RESULTY=`curl https://login.52.160.91.126.nip.io/auth/admin/realms/cloud/clients -H "Authorization: bearer $TOKEN" --insecure --silent`
+#echo $RESULTY > clients.json
+#RESULTZ=`curl -X POST -d @ocpclientcreate.json https://login.52.160.91.126.nip.io/auth/admin/realms/cloud/clients-registrations/default -H "[[Authorization: bearer $TOKEN],[Content-Type:application/json]]" --insecure `
+#echo $RESULTZ
+#echo $RESULTZ > ocpclient.json
+
+
+
+#RESULT=`curl --insecure -H '[["Content-Type","application/json"],["Authorization","Bearer "]]'--data "type=password&client_id=admin-cli&username=sso-mgmtuser&password=mgmt-password" https://login.52.160.91.126.nip.io/auth/realms/cloud/protocol/openid-connect/token`
+## "Create Client":
+## "method":"POST","url":"<URL>:<PORT>/auth/admin/realms/<REALM>/clients"
+## "body":
+## "{
+## "id":"3",
+## "clientId":"testclient-3",
+## "name": "testclient-3",
+## "description": "TESTCLIENT-3",
+## "enabled": true,
+## "redirectUris":[ "\\" ],
+## "publicClient": true
+## }"
+## "headers":
+## [["Content-Type","application/json"],
+## ["Authorization","Bearer <ACCESS_TOKEN>]]
+#

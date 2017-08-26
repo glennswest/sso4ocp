@@ -1,0 +1,77 @@
+ 54  ansible-playbook ./setup-sso.yml 
+   55  sudo bash
+   56  ls
+   57  vi setup-sso.yml
+   58  vi ~/master-config.yaml 
+   59  sudo bash
+   60  ls
+   61  vi setup-sso.yml 
+   62  ansible-playbook ./setup-sso.yml 
+   63  sudo bash
+   64  ls
+   65  vi setup-sso.yml 
+   66  ansible-playbook ./setup-sso.yml 
+   67  sudo bash
+   68  ls
+   69  vi setup-sso.yml 
+   70  ansible-playbook ./setup-sso.yml 
+   71  sudo bash
+   72  vi setup-sso.yml 
+   73  ansible-playbook ./setup-sso.yml 
+   74  vi setup-sso.yml 
+   75  ansible-playbook ./setup-sso.yml 
+   76  sudo bash
+   77  vi setup-sso.yml 
+   78  ansible-playbook ./setup-sso.yml 
+   79  sudo bash
+   80  vi setup-sso.yml 
+   81  ansible-playbook ./setup-sso.yml 
+   82  sudo bash
+   83  ansible-playbook ./setup-sso.yml 
+   84  sudo bash
+   85  ansible-playbook ./setup-sso.yml 
+   86  sudo bash
+   87  ls
+   88  ls idm
+   89  ls
+   90  sudo bash
+   91  ls
+   92  ls idm
+   93  history
+
+ 51  journalctl -xe
+   52  history
+   53  cd /etc/origin/master/
+   54  cp /home/glennswest/master-config.yaml .
+   55  systemctl restart atomic-openshift-master.service
+   56  journalctl -xe
+   57  exit
+   58  systemctl restart atomic-openshift-master.service
+   59  cp /home/glennswest/master-config.yaml .
+   60  pwd
+   61  cd /etc/origin/master/
+   62  cp /home/glennswest/master-config.yaml .
+   63  ls
+   64  exit
+   65  ls
+   66  vi master-config.yaml 
+   67  history
+   68  cd /etc/origin/master/
+   69  vi master-config.yaml 
+   70  history
+   71  systemctl restart atomic-openshift-master.service
+   72  systemctl status atomic-openshift-master.service
+   73  journalctl -xe | less
+   74  ls
+   75  ls *.crt
+   76  exit
+   77  history
+   78  cd /etc/origin/master/
+   79  cp /home/glennswest/master-config.yaml .
+   80  ls
+   81  pwd
+   82  exit
+   83  history
+
+
+
