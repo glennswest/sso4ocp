@@ -3,6 +3,12 @@
   vars:
     description: "auth users"
   tasks:
+  - name: Copy xpass.conf to masters
+    copy:
+      src: /home/glennswest/idm/xpaas.crt
+      dest: /etc/origin/master/xpaas.crt
+      owner: root
+      mode: 0600
   - name: Setup SSO Config
     blockinfile:
       backup: yes
