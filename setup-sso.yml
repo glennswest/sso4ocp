@@ -1,7 +1,97 @@
 ---
-- hosts: masters
+- hosts: localhost
+  connection: local
   vars:
-    description: "auth users"
+    description: "SSO Setup"
+  tasks:
+  - set_fact: idm_dir="/home/{{sso_username}}/{{sso_project}}"
+  - debug:
+      msg: "Idm dir {{ idm_dir }}"
+  - name: Install Java
+    yum:
+      name: java-1.8.0-openjdk
+      state: latest
+  - name: Install pwgen
+    yum:
+      name: pwgen
+      state: latest
+  - name: Cleanup old idm directory
+    file:
+      state: absent
+      path: "{{idm_dir}}"
+  - name: Create new idm directory
+    file: 
+      state: directory
+      path: "{{idm_dir}}"
+  - name: Delete service account
+    command: oc delete service account "{{sso_project}}_service_account"
+    ignore_errors: yes
+  - name: Delete Secret
+    command: oc delete secret "{{sso_project}}-app-secret"
+    ignore_errors: yes
+  - name: Delete Old Project
+    command: oc delete project "{{sso_project}}"
+    ignore_errors: yes
+  - name: Pause for cleanup of old install
+    pause:
+      minutes: 2
+  - name: Generate Project Id
+    command: pwgen -A 5 1 --symbols > .projectid
+    register: command_output
+  - set_fact: sso_projectid="{{command_output}}"
+  - set_fact: sso_idmpassword="Xp-{{sso_idm_password}}"
+  - name: Create Openshift Project for SSO
+    command: oc new-project "{{sso_project}}"
+  - name: Create Service Account
+    command: "oc create serviceaccount {{sso_project}}_service_account"
+  - name: Add admin role to user
+    command: "oadm policy add-role-to-user admin {{sso_username}}"
+  - name: Add view to user
+    command: "oc policy add-role-to-user view system:serviceaccount:${1}idm:sso-service-account
+  - name: Stage 1 - OpenSSL Request
+    command: 'openssl req -new  -passout pass:$idmpassword -newkey rsa:4096 -x509 -keyout {{idm_dir}}/xpaas.key -out {{idm_dir}}/xpaas.crt -days 365 -subj /CN=xpaas-sso.ca'
+  - name: Stage 2 - GENKEYPAIR
+    command: keytool  -genkeypair -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword -keyalg RSA -keysize 2048 -dname CN=${HOSTNAME_HTTPS} -alias sso-https-key -keystore sso-https.jks
+  - name: Stage 3 - CERTREQ
+    command: keytool  -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword -certreq -keyalg rsa -alias sso-https-key -keystore sso-https.jks -file sso.csr
+  - name: Stage 4 - X509
+    command: openssl x509 -req -passin pass:$idmpassword -CA xpaas.crt -CAkey xpaas.key -in sso.csr -out sso.crt -days 365 -CAcreateserial
+  - name: Stage 5 - IMPORT CRT
+    command: keytool  -noprompt -deststorepass $idmpassword -import -file xpaas.crt  -storepass $idmpassword -keypass $idmpassword -alias xpaas.ca -keystore sso-https.jks
+  - name: Stage 6 - IMPORT SSO
+    command: keytool  -noprompt -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword  -import -file sso.crt -alias sso-https-key -keystore sso-https.jks
+  - name: Stage 7 - IMPORT XPAAS
+    command: keytool -noprompt -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword   -import -file xpaas.crt -alias xpaas.ca -keystore truststore.jks
+  - name: Stage 8 - GENSECKEY
+    command: keytool  -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword -genseckey -alias jgroups -storetype JCEKS -keystore jgroups.jceks
+  - name: Stage 9 - OCCREATE SECRET
+    command: oc create secret generic sso-app-secret --from-file=jgroups.jceks --from-file=sso-https.jks --from-file=truststore.jks
+  - name: Stage 10 - OCCREATE SECRET ADD
+    command: oc secret add sa/sso-service-account secret/sso-app-secret
+  - name: Stage 11 - Create App Parameters
+    blockinfile:
+       path: {{idm_dir}}/sso.params
+       block: |
+         HOSTNAME_HTTPS=\"login.$DOMAIN\"
+         HOSTNAME_HTTP=\"nlogin.$DOMAIN\"
+         APPLICATION_NAME=\"sso\"
+         HTTPS_KEYSTORE=\"sso-https.jks\"
+         HTTPS_PASSWORD=\"$idmpassword\"
+         HTTPS_SECRET=\"sso-app-secret\"
+         JGROUPS_ENCRYPT_KEYSTORE=\"jgroups.jceks\"
+         JGROUPS_ENCRYPT_PASSWORD=\"$idmpassword\"
+         JGROUPS_ENCRYPT_SECRET=\"sso-app-secret\"
+         SERVICE_ACCOUNT_NAME=sso-service-account
+         SSO_REALM=cloud
+         SSO_SERVICE_USERNAME=sso-mgmtuser
+         SSO_SERVICE_PASSWORD=mgmt-password
+         SSO_ADMIN_USERNAME=admin
+         SSO_ADMIN_PASSWORD=adm-password
+         SSO_TRUSTSTORE=truststore.jks
+         SSO_TRUSTSTORE_PASSWORD=$idmpassword
+  - name: Stage 10 - OCCREATE SECRET ADD
+    command: oc new-app sso71-postgresql --param-file sso.params -l app=sso71-postgresql -l application=sso -l template=sso71-https
+- hosts: master1
   tasks:
   - name: Copy xpass.conf to masters
     copy:
@@ -38,4 +128,7 @@
                - name
                email:
                - email
+
+  - debug:
+      msg: Completed
 
