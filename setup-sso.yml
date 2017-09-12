@@ -4,8 +4,25 @@
     description: "SSO Setup"
     sso_username: "glennswest"
     sso_project:  "sso"
-    sso_idm_password: "merlion1"
+    sso_idm_password: "password"
+    sso_domain:   "13.76.165.82.nip.io"
+    create_data:
+        clientId: "openshift"
+        name:     "OpenShift"
+        description: "OpenShift Console Authentication"
+        enabled: true
+        protocol: "openid-connect"
+        clientAuthenticatorType: "client-secret"
+        directAccessGrantsEnabled: true
+        redirectUris: ["https://gsw1v36.southeastasia.cloudapp.azure.com:8443"]
+        webOrigins: []
+        publicClient: false
+        consentRequired: false
+        frontchannelLogout: false
+        standardFlowEnabled: true
   tasks:
+  - debug:
+      msg: "Domain: {{sso_domain}}"
   - set_fact: idm_dir="/home/{{sso_username}}/{{sso_project}}"
   - debug:
       msg: "Idm dir {{ idm_dir }}"
@@ -63,7 +80,7 @@
     command: pwgen -A 5 1 --symbols > .projectid
     register: command_output
   - set_fact: sso_projectid="{{command_output}}"
-  - set_fact: sso_idmpassword="Xp-{{sso_idm_password}}"
+  - set_fact: idm_xpassword="Xp-{{sso_idm_password}}"
   - name: Create Openshift Project for SSO
     command: oc new-project "{{sso_project}}"
   - name: Create Service Account
@@ -73,50 +90,77 @@
   - name: Add view to user
     command: "oc policy add-role-to-user view system:serviceaccount:${1}idm:{{sso_project}}-service-account"
   - name: Stage 1 - OpenSSL Request
-    command: "openssl req -new  -passout pass:$idmpassword -newkey rsa:4096 -x509 -keyout {{idm_dir}}/xpaas.key -out {{idm_dir}}/xpaas.crt -days 365 -subj /CN=xpaas-sso.ca"
+    command: "openssl req -new  -passout pass:{{idm_xpassword}} -newkey rsa:4096 -x509 -keyout {{idm_dir}}/xpaas.key -out {{idm_dir}}/xpaas.crt -days 365 -subj /CN=xpaas-sso.ca"
   - name: Stage 2 - GENKEYPAIR
-    command: "keytool  -genkeypair -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword -keyalg RSA -keysize 2048 -dname CN=${HOSTNAME_HTTPS} -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks"
+    command: "keytool  -genkeypair -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -keyalg RSA -keysize 2048 -dname CN=${HOSTNAME_HTTPS} -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks"
   - name: Stage 3 - CERTREQ
-    command: "keytool  -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword -certreq -keyalg rsa -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks -file {{idm_dir}}/sso.csr"
+    command: "keytool  -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -certreq -keyalg rsa -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks -file {{idm_dir}}/sso.csr"
   - name: Stage 4 - X509
-    command: "openssl x509 -req -passin pass:$idmpassword -CA {{idm_dir}}/xpaas.crt -CAkey {{idm_dir}}/xpaas.key -in {{idm_dir}}/sso.csr -out {{idm_dir}}/sso.crt -days 365 -CAcreateserial"
+    command: "openssl x509 -req -passin pass:{{idm_xpassword}} -CA {{idm_dir}}/xpaas.crt -CAkey {{idm_dir}}/xpaas.key -in {{idm_dir}}/sso.csr -out {{idm_dir}}/sso.crt -days 365 -CAcreateserial"
   - name: Stage 5 - IMPORT CRT
-    command: "keytool  -noprompt -deststorepass $idmpassword -import -file {{idm_dir}}/xpaas.crt  -storepass $idmpassword -keypass $idmpassword -alias xpaas.ca -keystore {{idm_dir}}/sso-https.jks"
+    command: "keytool  -noprompt -deststorepass {{idm_xpassword}} -import -file {{idm_dir}}/xpaas.crt  -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -alias xpaas.ca -keystore {{idm_dir}}/sso-https.jks"
   - name: Stage 6 - IMPORT SSO
-    command: "keytool  -noprompt -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword  -import -file {{idm_dir}}/sso.crt -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks"
+    command: "keytool  -noprompt -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}}  -import -file {{idm_dir}}/sso.crt -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks"
   - name: Stage 7 - IMPORT XPAAS
-    command: "keytool -noprompt -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword   -import -file {{idm_dir}}/xpaas.crt -alias xpaas.ca -keystore {{idm_dir}}/truststore.jks"
+    command: "keytool -noprompt -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}}   -import -file {{idm_dir}}/xpaas.crt -alias xpaas.ca -keystore {{idm_dir}}/truststore.jks"
   - name: Stage 8 - GENSECKEY
-    command: "keytool  -deststorepass $idmpassword -storepass $idmpassword -keypass $idmpassword -genseckey -alias jgroups -storetype JCEKS -keystore {{idm_dir}}/jgroups.jceks"
+    command: "keytool  -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -genseckey -alias jgroups -storetype JCEKS -keystore {{idm_dir}}/jgroups.jceks"
   - name: Stage 9 - OCCREATE SECRET
     command: "oc create secret generic sso-app-secret --from-file={{idm_dir}}/jgroups.jceks --from-file={{idm_dir}}/sso-https.jks --from-file={{idm_dir}}/truststore.jks"
   - name: Stage 10 - OCCREATE SECRET ADD
-    command: "oc secret add sa/sso-service-account secret/sso-app-secret"
+    command: "oc secret add sa/{{sso_project}}-service-account secret/sso-app-secret"
   - name: Stage 11 - Create App Parameters
     blockinfile:
        path: "{{idm_dir}}/sso.params"
        create: yes
        block: |
-         HOSTNAME_HTTPS=\"login.$DOMAIN\"
-         HOSTNAME_HTTP=\"nlogin.$DOMAIN\"
-         APPLICATION_NAME=\"sso\"
-         HTTPS_KEYSTORE=\"sso-https.jks\"
-         HTTPS_PASSWORD=\"$idmpassword\"
-         HTTPS_SECRET=\"sso-app-secret\"
-         JGROUPS_ENCRYPT_KEYSTORE=\"jgroups.jceks\"
-         JGROUPS_ENCRYPT_PASSWORD=\"$idmpassword\"
-         JGROUPS_ENCRYPT_SECRET=\"sso-app-secret\"
-         SERVICE_ACCOUNT_NAME=sso-service-account
+         HOSTNAME_HTTP="nlogin.{{sso_domain}}"
+         HOSTNAME_HTTPS="login.{{sso_domain}}"
+         APPLICATION_NAME="{{sso_project}}"
+         HTTPS_KEYSTORE="sso-https.jks"
+         HTTPS_PASSWORD="{{idm_xpassword}}"
+         HTTPS_SECRET="sso-app-secret"
+         JGROUPS_ENCRYPT_KEYSTORE="jgroups.jceks"
+         JGROUPS_ENCRYPT_PASSWORD="{{idm_xpassword}}"
+         JGROUPS_ENCRYPT_SECRET="sso-app-secret"
+         SERVICE_ACCOUNT_NAME={{sso_project}}-service-account
          SSO_REALM=cloud
          SSO_SERVICE_USERNAME=sso-mgmtuser
-         SSO_SERVICE_PASSWORD=mgmt-password
+         SSO_SERVICE_PASSWORD=mgmt-{{sso_idm_password}}
          SSO_ADMIN_USERNAME=admin
-         SSO_ADMIN_PASSWORD=adm-password
+         SSO_ADMIN_PASSWORD=adm-{{sso_idm_password}}
          SSO_TRUSTSTORE=truststore.jks
-         SSO_TRUSTSTORE_PASSWORD=$idmpassword
+         SSO_TRUSTSTORE_PASSWORD={{idm_xpassword}}
 
   - name: Stage 10 - OCCREATE SECRET ADD
-    command: oc new-app sso71-postgresql --param-file sso.params -l app=sso71-postgresql -l application=sso -l template=sso71-https
+    command: oc new-app sso71-postgresql --param-file {{idm_dir}}/sso.params -l app=sso71-postgresql -l application=sso -l template=sso71-https
+  - set_fact: sso_token_url="https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/token"
+  - name: Login to SSO and Get Token
+    uri:
+      url: "{{sso_token_url}}"
+      method: POST
+      body: "grant_type=password&client_id=admin-cli&username=sso-mgmtuser&password=mgmt-password"
+      return_content: yes
+      status_code: 200
+      validate_certs: no
+    register: login
+    until: login.status == 200
+    retries: 90
+    delay: 30
+  - debug: var=login.json.access_token
+  - name: Create SSO Client for Openshift
+    uri:
+      url: "https://login.{{sso_domain}}/auth/realms/cloud/clients-registrations/default"
+      method: POST
+      headers:
+           "Authorization": "bearer {{login.json.access_token}}"
+           "Content-Type": "application/json"
+      body: "{{ create_data | to_json }}"
+      return_content: yes
+      status_code: 201
+      validate_certs: no
+    register: create
+  - debug: var=create.json.secret
 - hosts: master1
   tasks:
   - name: Copy xpass.conf to masters
