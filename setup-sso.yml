@@ -40,12 +40,21 @@
   - name: Delete service account
     command: oc delete service account "{{sso_project}}_service_account"
     ignore_errors: yes
+    register: result
+    failed_when: 
+      - "result.rc > 10"
   - name: Delete Secret
     command: oc delete secret "{{sso_project}}-app-secret"
     ignore_errors: yes
+    register: result
+    failed_when: 
+      - "result.rc > 10"
   - name: Delete Old Project
     command: oc delete project "{{sso_project}}"
     ignore_errors: yes
+    register: result
+    failed_when: 
+      - "result.rc > 10"
   - name: Pause for cleanup of old install
     pause:
       minutes: 2
