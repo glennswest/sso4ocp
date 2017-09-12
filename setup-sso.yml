@@ -165,7 +165,7 @@
   tasks:
   - name: Copy xpass.conf to masters
     copy:
-      src: /home/glennswest/idm/xpaas.crt
+      src:  "{{idm_dir}}/xpaas.crt"
       dest: /etc/origin/master/xpaas.crt
       owner: root
       mode: 0600
@@ -183,7 +183,7 @@
              apiVersion: v1
              kind: OpenIDIdentityProvider
              clientID: openshift
-             clientSecret: fd3b3f2c-2967-4654-a186-3612f82e2b97
+             clientSecret: {{create.json.secret}}
              ca: xpaas.crt
              urls:
                authorize: https://login.52.160.91.126.nip.io/auth/realms/cloud/protocol/openid-connect/auth
