@@ -5,7 +5,7 @@
     sso_username: "glennswest"
     sso_project:  "sso"
     sso_idm_password: "password"
-    sso_domain:   "13.76.165.82.nip.io"
+    sso_domain:   "52.163.122.117.nip.io"
     create_data:
         clientId: "openshift"
         name:     "OpenShift"
@@ -14,7 +14,7 @@
         protocol: "openid-connect"
         clientAuthenticatorType: "client-secret"
         directAccessGrantsEnabled: true
-        redirectUris: ["https://gsw1v36.southeastasia.cloudapp.azure.com:8443"]
+        redirectUris: ["https://gsw1v36.southeastasia.cloudapp.azure.com:8443/*"]
         webOrigins: []
         publicClient: false
         consentRequired: false
@@ -135,6 +135,9 @@
   - name: Stage 10 - OCCREATE SECRET ADD
     command: oc new-app sso71-postgresql --param-file {{idm_dir}}/sso.params -l app=sso71-postgresql -l application=sso -l template=sso71-https
   - set_fact: sso_token_url="https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/token"
+  - name: Pause for app create
+    pause:
+      minutes: 4
   - name: Login to SSO and Get Token
     uri:
       url: "{{sso_token_url}}"
@@ -161,8 +164,6 @@
       validate_certs: no
     register: create
   - debug: var=create.json.secret
-- hosts: master1
-  tasks:
   - name: Copy xpass.conf to masters
     copy:
       src:  "{{idm_dir}}/xpaas.crt"
@@ -186,9 +187,9 @@
              clientSecret: {{create.json.secret}}
              ca: xpaas.crt
              urls:
-               authorize: https://login.52.160.91.126.nip.io/auth/realms/cloud/protocol/openid-connect/auth
-               token: https://login.52.160.91.126.nip.io/auth/realms/cloud/auth/realms/OpenShift/protocol/openid-connect/token
-               userInfo: https://login.52.160.91.126.nip.io/auth/realms/cloud/auth/realms/OpenShift/protocol/openid-connect/userinfo
+               authorize: https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/auth
+               token: https://login.{{sso_domain}}/auth/realms/cloud/auth/realms/openshift/protocol/openid-connect/token
+               userInfo: https://login.{{sso_domain}}/auth/realms/cloud/auth/realms/openshift/protocol/openid-connect/userinfo
              claims:
                id:
                - sub
