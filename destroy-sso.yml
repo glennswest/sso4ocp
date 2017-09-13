@@ -1,0 +1,40 @@
+---
+- hosts: masters
+  vars:
+    description: "SSO Setup"
+    sso_username: "glennswest"
+    sso_project:  "sso"
+    sso_idm_password: "password"
+    sso_domain:   "13.76.165.82.nip.io"
+  tasks:
+  - debug:
+      msg: "Domain: {{sso_domain}}"
+  - set_fact: idm_dir="/home/{{sso_username}}/{{sso_project}}"
+  - debug:
+      msg: "Idm dir {{ idm_dir }}"
+  - name: Remove repository (and clean up left-over metadata)
+    yum_repository:
+      name: epel
+      state: absent
+  - name: Cleanup old idm directory
+    file:
+      state: absent
+      path: "{{idm_dir}}"
+  - name: Delete service account
+    command: oc delete service account "{{sso_project}}-service_account"
+    ignore_errors: yes
+    register: result
+    failed_when: 
+      - "result.rc > 10"
+  - name: Delete Secret
+    command: oc delete secret "{{sso_project}}-app-secret"
+    ignore_errors: yes
+    register: result
+    failed_when: 
+      - "result.rc > 10"
+  - name: Delete Old Project
+    command: oc delete project "{{sso_project}}"
+    ignore_errors: yes
+    register: result
+    failed_when: 
+      - "result.rc > 10"
