@@ -192,8 +192,8 @@
              ca: xpaas.crt
              urls:
                authorize: https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/auth
-               token: https://login.{{sso_domain}}/auth/realms/openshift/protocol/openid-connect/token
-               userInfo: https://login.{{sso_domain}}/auth/realms/openshift/protocol/openid-connect/userinfo
+               token: https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/token
+               userInfo: https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/userinfo
              claims:
                id:
                - sub
