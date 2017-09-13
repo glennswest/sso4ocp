@@ -1,4 +1,6 @@
 # Sep 13 05:33:24 gsw1v36 atomic-openshift-master[130275]: E0913 05:33:24.398444  130275 errorpage.go:30] AuthenticationError: Post https://login.52.187.116.67.nip.io/auth/realms/cloud/auth/realms/openshift/protocol/openid-connect/token: x509: certificate is valid for ${HOSTNAME_HTTPS}, not login.52.187.116.67.nip.io
+#WARN  [org.keycloak.events] (default task-31) type=LOGIN_ERROR, realmId=master, clientId=security-admin-console, userId=null, ipAddress=10.128.0.1, error=user_not_found, auth_method=openid-connect, auth_type=code, redirect_uri=https://login.52.187.116.67.nip.io/auth/admin/master/console/?redirect_fragment=%2Frealms%2Fcloud%2Fusers%2F103650c8-0019-4932-9714-a2b9330ebed4, code_id=31979be5-c815-4cf2-a2c6-c576dd3f2439, username=gwest@redhat.com
+
 ---
 - hosts: masters
   vars:
@@ -94,7 +96,7 @@
   - name: Stage 1 - OpenSSL Request
     command: "openssl req -new  -passout pass:{{idm_xpassword}} -newkey rsa:4096 -x509 -keyout {{idm_dir}}/xpaas.key -out {{idm_dir}}/xpaas.crt -days 365 -subj /CN=xpaas-sso.ca"
   - name: Stage 2 - GENKEYPAIR
-    command: "keytool  -genkeypair -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -keyalg RSA -keysize 2048 -dname CN={{HOSTNAME_HTTPS}} -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks"
+    command: "keytool  -genkeypair -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -keyalg RSA -keysize 2048 -dname CN={{hostname_https}} -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks"
   - name: Stage 3 - CERTREQ
     command: "keytool  -deststorepass {{idm_xpassword}} -storepass {{idm_xpassword}} -keypass {{idm_xpassword}} -certreq -keyalg rsa -alias sso-https-key -keystore {{idm_dir}}/sso-https.jks -file {{idm_dir}}/sso.csr"
   - name: Stage 4 - X509
@@ -190,8 +192,8 @@
              ca: xpaas.crt
              urls:
                authorize: https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/auth
-               token: https://login.{{sso_domain}}/auth/realms/cloud/auth/realms/openshift/protocol/openid-connect/token
-               userInfo: https://login.{{sso_domain}}/auth/realms/cloud/auth/realms/openshift/protocol/openid-connect/userinfo
+               token: https://login.{{sso_domain}}/auth/realms/openshift/protocol/openid-connect/token
+               userInfo: https://login.{{sso_domain}}/auth/realms/openshift/protocol/openid-connect/userinfo
              claims:
                id:
                - sub
@@ -202,6 +204,9 @@
                email:
                - email
 
+  - service:
+      name: atomic-openshift-master
+      state: restarted
   - debug:
       msg: "Completed"
 
