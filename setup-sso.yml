@@ -129,12 +129,12 @@
          JGROUPS_ENCRYPT_SECRET="sso-app-secret"
          SERVICE_ACCOUNT_NAME={{sso_project}}-service-account
          SSO_REALM=cloud
-         SSO_SERVICE_USERNAME="{{sso_username}}
-         SSO_SERVICE_PASSWORD={{sso_password}}
+         SSO_SERVICE_USERNAME="{{sso_username}}"
+         SSO_SERVICE_PASSWORD="{{sso_password}}"
          SSO_ADMIN_USERNAME=admin
-         SSO_ADMIN_PASSWORD=adm-{{sso_password}}
+         SSO_ADMIN_PASSWORD="adm-{{sso_password}}"
          SSO_TRUSTSTORE=truststore.jks
-         SSO_TRUSTSTORE_PASSWORD={{idm_xpassword}}
+         SSO_TRUSTSTORE_PASSWORD="{{idm_xpassword}}"
 
   - name: Stage 10 - OCCREATE SECRET ADD
     command: oc new-app sso71-postgresql --param-file {{idm_dir}}/sso.params -l app=sso71-postgresql -l application=sso -l template=sso71-https
@@ -146,7 +146,7 @@
     uri:
       url: "{{sso_token_url}}"
       method: POST
-      body: "grant_type=password&client_id=admin-cli&username=sso-mgmtuser&password=mgmt-password"
+      body: "grant_type=password&client_id=admin-cli&username=sso-mgmtuser&password={{sso_password}}"
       return_content: yes
       status_code: 200
       validate_certs: no
