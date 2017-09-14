@@ -1,15 +1,7 @@
-# Sep 13 05:33:24 gsw1v36 atomic-openshift-master[130275]: E0913 05:33:24.398444  130275 errorpage.go:30] AuthenticationError: Post https://login.52.187.116.67.nip.io/auth/realms/cloud/auth/realms/openshift/protocol/openid-connect/token: x509: certificate is valid for ${HOSTNAME_HTTPS}, not login.52.187.116.67.nip.io
-#WARN  [org.keycloak.events] (default task-31) type=LOGIN_ERROR, realmId=master, clientId=security-admin-console, userId=null, ipAddress=10.128.0.1, error=user_not_found, auth_method=openid-connect, auth_type=code, redirect_uri=https://login.52.187.116.67.nip.io/auth/admin/master/console/?redirect_fragment=%2Frealms%2Fcloud%2Fusers%2F103650c8-0019-4932-9714-a2b9330ebed4, code_id=31979be5-c815-4cf2-a2c6-c576dd3f2439, username=gwest@redhat.com
-
 ---
-- hosts: masters
+- hosts: masters[0]
   vars:
     description: "SSO Setup"
-    sso_username: "glennswest"
-    sso_project:  "sso"
-    sso_password: "password"
-    sso_domain:   "52.187.116.67.nip.io"
-    hostname_https: "login.{{sso_domain}}"
     create_data:
         clientId: "openshift"
         name:     "OpenShift"
@@ -25,6 +17,11 @@
         frontchannelLogout: false
         standardFlowEnabled: true
   tasks:
+  - set_fact: sso_username="glennswest"
+  - set_fact: sso_project="sso"
+  - set_fact: sso_password="password"
+  - set_fact: sso_domain="52.187.116.67.nip.io"
+  - set_fact: hostname_https="login.{{sso_domain}}"
   - debug:
       msg: "Domain: {{sso_domain}}"
   - set_fact: idm_dir="/home/{{sso_username}}/{{sso_project}}"
@@ -168,6 +165,8 @@
       validate_certs: no
     register: create
   - debug: var=create.json.secret
+- hosts: masters
+  tasks:
   - name: Copy xpass.conf to masters
     copy:
       src:  "{{idm_dir}}/xpaas.crt"
