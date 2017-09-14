@@ -146,7 +146,7 @@
     uri:
       url: "{{sso_token_url}}"
       method: POST
-      body: "grant_type=password&client_id=admin-cli&username=sso-mgmtuser&password={{sso_password}}"
+      body: "grant_type=password&client_id=admin-cli&username={{sso_username}}&password={{sso_password}}"
       return_content: yes
       status_code: 200
       validate_certs: no
