@@ -7,7 +7,7 @@
     description: "SSO Setup"
     sso_username: "glennswest"
     sso_project:  "sso"
-    sso_idm_password: "password"
+    sso_password: "password"
     sso_domain:   "52.187.116.67.nip.io"
     hostname_https: "login.{{sso_domain}}"
     create_data:
@@ -84,7 +84,7 @@
     command: pwgen -A 5 1 --symbols > .projectid
     register: command_output
   - set_fact: sso_projectid="{{command_output}}"
-  - set_fact: idm_xpassword="Xp-{{sso_idm_password}}"
+  - set_fact: idm_xpassword="Xp-{{sso_password}}"
   - name: Create Openshift Project for SSO
     command: oc new-project "{{sso_project}}"
   - name: Create Service Account
@@ -129,10 +129,10 @@
          JGROUPS_ENCRYPT_SECRET="sso-app-secret"
          SERVICE_ACCOUNT_NAME={{sso_project}}-service-account
          SSO_REALM=cloud
-         SSO_SERVICE_USERNAME=sso-mgmtuser
-         SSO_SERVICE_PASSWORD=mgmt-{{sso_idm_password}}
+         SSO_SERVICE_USERNAME="{{sso_username}}
+         SSO_SERVICE_PASSWORD={{sso_password}}
          SSO_ADMIN_USERNAME=admin
-         SSO_ADMIN_PASSWORD=adm-{{sso_idm_password}}
+         SSO_ADMIN_PASSWORD=adm-{{sso_password}}
          SSO_TRUSTSTORE=truststore.jks
          SSO_TRUSTSTORE_PASSWORD={{idm_xpassword}}
 
@@ -207,6 +207,11 @@
   - service:
       name: atomic-openshift-master
       state: restarted
+  - name: Pause for service restart
+    pause:
+      seconds: 10
+  - name: Add our user as cluster admin
+    command: oc adm policy add-cluster-role-to-user cluster-admin "{{sso_username}}"
   - debug:
       msg: "Completed"
 
