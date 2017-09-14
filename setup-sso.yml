@@ -1,5 +1,13 @@
 ---
 - hosts: masters[0]
+  tasks:
+  - set_fact: sso_username="glennswest"
+  - set_fact: sso_project="sso"
+  - set_fact: sso_password="password"
+  - set_fact: sso_domain="52.187.116.67.nip.io"
+  - set_fact: hostname_https="login.{{sso_domain}}"
+  - set_fact: api_master="gsw1v36.southeastasia.cloudapp.azure.com"
+- hosts: masters[0]
   vars:
     description: "SSO Setup"
     create_data:
@@ -10,18 +18,13 @@
         protocol: "openid-connect"
         clientAuthenticatorType: "client-secret"
         directAccessGrantsEnabled: true
-        redirectUris: ["https://gsw1v36.southeastasia.cloudapp.azure.com:8443/*"]
+        redirectUris: ["https://{{api_master}}:8443/*"]
         webOrigins: []
         publicClient: false
         consentRequired: false
         frontchannelLogout: false
         standardFlowEnabled: true
   tasks:
-  - set_fact: sso_username="glennswest"
-  - set_fact: sso_project="sso"
-  - set_fact: sso_password="password"
-  - set_fact: sso_domain="52.187.116.67.nip.io"
-  - set_fact: hostname_https="login.{{sso_domain}}"
   - debug:
       msg: "Domain: {{sso_domain}}"
   - set_fact: idm_dir="/home/{{sso_username}}/{{sso_project}}"
