@@ -1,0 +1,7 @@
+---
+  sso_username: "glennswest"
+  sso_project: "sso"
+  sso_password: "password"
+  sso_domain: "52.187.116.67.nip.io"
+  hostname_https: "login.{{sso_domain}}"
+  api_master: "gsw1v36.southeastasia.cloudapp.azure.com"

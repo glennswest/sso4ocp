@@ -1,13 +1,7 @@
 ---
 - hosts: masters[0]
-  tasks:
-  - set_fact: sso_username="glennswest"
-  - set_fact: sso_project="sso"
-  - set_fact: sso_password="password"
-  - set_fact: sso_domain="52.187.116.67.nip.io"
-  - set_fact: hostname_https="login.{{sso_domain}}"
-  - set_fact: api_master="gsw1v36.southeastasia.cloudapp.azure.com"
-- hosts: masters[0]
+  vars_files:
+    - ssovars.yml
   vars:
     description: "SSO Setup"
     create_data:
@@ -169,6 +163,8 @@
     register: create
   - debug: var=create.json.secret
 - hosts: masters
+  vars_files:
+    - ssovars.yml
   tasks:
   - name: Copy xpass.conf to masters
     copy:
