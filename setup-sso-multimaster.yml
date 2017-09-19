@@ -32,27 +32,27 @@
     file:
       state: absent
       path: "{{idm_dir}}"
-  - name: Create new idm directory
-    file: 
+  - name: C eate new idm directory
+    file:
       state: directory
       path: "{{idm_dir}}"
   - name: Delete service account
     command: oc delete service account "{{sso_project}}-service_account"
     ignore_errors: yes
     register: result
-    failed_when: 
+    failed_when:
       - "result.rc > 10"
   - name: Delete Secret
     command: oc delete secret "{{sso_project}}-app-secret"
     ignore_errors: yes
     register: result
-    failed_when: 
+    failed_when:
       - "result.rc > 10"
   - name: Delete Old Project
     command: oc delete project "{{sso_project}}"
     ignore_errors: yes
     register: result
-    failed_when: 
+    failed_when:
       - "result.rc > 10"
   - name: Pause for cleanup of old install
     pause:
@@ -66,7 +66,7 @@
   - name: Add admin role to user
     command: "oadm policy add-role-to-user admin {{sso_username}}"
   - name: Add view to user
-    command: "oc policy add-role-to-user view system:serviceaccount:gsw1v36idm:{{sso_project}}-service-account"
+    command: "oc policy add-role-to-user view system:serviceaccount:gswmonidm:{{sso_project}}-service-account"
   - name: Stage 1 - OpenSSL Request
     command: "openssl req -new  -passout pass:{{idm_xpassword}} -newkey rsa:4096 -x509 -keyout {{idm_dir}}/xpaas.key -out {{idm_dir}}/xpaas.crt -days 365 -subj /CN=xpaas-sso.ca"
   - name: Stage 2 - GENKEYPAIR
@@ -142,10 +142,18 @@
       validate_certs: no
     register: create
   - debug: var=create.json.secret
+  - local_action: copy content={{create.json.secret}} dest=/tmp/ssosecret.var
+  - fetch:
+       src: "{{idm_dir}}/xpaas.crt"
+       dest: "{{idm_dir}}/xpaas.crt"
+       flat: yes
 - hosts: masters
   vars_files:
     - ssovars.yml
+  vars:
+     ssosecret: "{{lookup('file', '/tmp/ssosecret.var')}}"
   tasks:
+  - set_fact: idm_dir="/home/{{sso_username}}/{{sso_project}}"
   - name: Copy xpass.conf to masters
     copy:
       src:  "{{idm_dir}}/xpaas.crt"
@@ -166,7 +174,7 @@
              apiVersion: v1
              kind: OpenIDIdentityProvider
              clientID: openshift
-             clientSecret: {{create.json.secret}}
+             clientSecret: {{ssosecret}}
              ca: xpaas.crt
              urls:
                authorize: https://login.{{sso_domain}}/auth/realms/cloud/protocol/openid-connect/auth
@@ -183,7 +191,10 @@
                - email
 
   - service:
-      name: atomic-openshift-master
+      name: atomic-openshift-master-api
+      state: restarted
+  - service:
+      name: atomic-openshift-master-controllers
       state: restarted
   - name: Pause for service restart
     pause:
